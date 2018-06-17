@@ -1,0 +1,1 @@
+nohup ./Fcoin>Fcoin.out 2>&1 &

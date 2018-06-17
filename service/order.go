@@ -35,32 +35,23 @@ func OrderRun() {
 	sleep, _ := beego.AppConfig.Int("Sleep")
 	amount, _ := beego.AppConfig.Float("Amount")
 	symbol := beego.AppConfig.String("Symbol") + beego.AppConfig.String("Base")
+
+	return
 	i := uint64(0)
 	for {
+		if 
 		if price > 0 {
+			//获取小数点位数
+			amount_decimal := symbol_map[symbol].AmountDecimal
+			price_decimal := symbol_map[symbol].PriceDecimal
 
-			currency, base := api.GetBalance()
+			if amount_decimal > 0 && price_decimal > 0 {
+				amount_decimal_str := "%." + fmt.Sprintf("%d", amount_decimal) + "f"
+				price_decimal_str := "%." + fmt.Sprintf("%d", price_decimal) + "f"
 
-			beego.Trace(currency, base)
-
-			//买卖的逻辑
-			if (currency >= amount) && base >= (amount*price) {
-
-				amount_decimal := symbol_map[symbol].AmountDecimal
-				price_decimal := symbol_map[symbol].PriceDecimal
-				if amount_decimal > 0 && price_decimal > 0 {
-					amount_decimal_str := "%." + fmt.Sprintf("%d", amount_decimal) + "f"
-					price_decimal_str := "%." + fmt.Sprintf("%d", price_decimal) + "f"
-
-					go api.CreateOrder(i, fmt.Sprintf(amount_decimal_str, amount), fmt.Sprintf(price_decimal_str, price), "sell", symbol, "limit")
-					go api.CreateOrder(i, fmt.Sprintf(amount_decimal_str, amount), fmt.Sprintf(price_decimal_str, price), "buy", symbol, "limit")
-					i++
-				}
-
-			} else if (currency == 0) && base == 0 {
-				beego.Trace("接口错误")
-			} else {
-				beego.Trace("需要补仓")
+				go api.CreateOrder(i, fmt.Sprintf(amount_decimal_str, amount), fmt.Sprintf(price_decimal_str, price), "sell", symbol, "limit")
+				go api.CreateOrder(i, fmt.Sprintf(amount_decimal_str, amount), fmt.Sprintf(price_decimal_str, price), "buy", symbol, "limit")
+				i++
 			}
 
 		}

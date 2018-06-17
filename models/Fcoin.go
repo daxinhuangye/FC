@@ -20,8 +20,6 @@ type Fcoin struct {
 	DiffTime  uint64
 }
 
-//火币api接口
-
 const (
 	HOST = "https://api.fcoin.com/v2"
 )
@@ -45,7 +43,7 @@ func (this *Fcoin) GetSymbols() string {
 	//curl.SetTimeout(5*time.Second, 5*time.Second)
 
 	//获取请求的内容
-	temp, err := this.request(curl)
+	temp, err := this.request(curl, 3)
 	if err != nil {
 		return ""
 	}
@@ -75,7 +73,7 @@ func (this *Fcoin) GetBalance() (float64, float64) {
 	//curl.SetTimeout(5*time.Second, 5*time.Second)
 
 	//获取请求的内容
-	temp, err := this.request(curl)
+	temp, err := this.request(curl, 3)
 	if err != nil {
 		beego.Error(err)
 		return 0, 0
@@ -139,7 +137,7 @@ func (this *Fcoin) CreateOrder(i uint64, amount, price, side, symbol, types stri
 	//curl.SetTimeout(5*time.Second, 5*time.Second)
 
 	//获取请求的内容
-	temp, err := this.request(curl)
+	temp, err := this.request(curl, 1)
 	if err != nil {
 		beego.Trace("交易错误:", err)
 		return
@@ -159,6 +157,41 @@ func (this *Fcoin) CreateOrder(i uint64, amount, price, side, symbol, types stri
 		beego.Trace(content)
 	}
 
+}
+
+//获取订单数
+func (this *Fcoin) GetOrders(symbol string) string {
+
+	api := HOST + "/orders?limit=1000&states=submitted&symbol=" + symbol
+	ts := tsTime.CurrMs() + this.DiffTime
+
+	str := fmt.Sprintf("GET%s%d", api, ts)
+	sg := this.getSha1(tsCrypto.Base64Encode(str))
+
+	curl := httplib.Get(api)
+	curl.Header("FC-ACCESS-KEY", beego.AppConfig.String("AccessKey"))
+	curl.Header("FC-ACCESS-SIGNATURE", sg)
+	curl.Header("FC-ACCESS-TIMESTAMP", fmt.Sprintf("%d", ts))
+	//设置超时时间 2秒链接，3秒读数据
+	//curl.JSONBody(postData)
+
+	//curl.SetTimeout(5*time.Second, 5*time.Second)
+
+	//获取请求的内容
+	temp, err := this.request(curl, 3)
+	if err != nil {
+		beego.Trace("订单列表接口无法调用:", err)
+		return ""
+	}
+
+	content := string(temp)
+
+	status := gjson.Get(content, "status").Int()
+
+	if status == 0 {
+		return ""
+	}
+	return content
 }
 
 func (this *Fcoin) getSha1(data string) string {
@@ -181,7 +214,7 @@ func (this *Fcoin) getTime() int64 {
 
 	//设置超时时间 2秒链接，3秒读数据
 	//curl.SetTimeout(5*time.Second, 5*time.Second)
-	temp, err := this.request(curl)
+	temp, err := this.request(curl, 3)
 	if err != nil {
 		beego.Error(err)
 		return 0
@@ -196,13 +229,13 @@ func (this *Fcoin) getTime() int64 {
 	return ts
 }
 
-func (this *Fcoin) request(curl *httplib.BeegoHTTPRequest) (string, error) {
+func (this *Fcoin) request(curl *httplib.BeegoHTTPRequest, num int) (string, error) {
 
 	temp, err := curl.Bytes()
 
 	if err != nil {
 		i := 0
-		for i < 2 {
+		for i < num {
 			temp, err = curl.Bytes()
 			if err == nil {
 				break

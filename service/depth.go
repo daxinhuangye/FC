@@ -4,6 +4,7 @@ import (
 	"Fcoin/models"
 	"fmt"
 	_ "strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/tidwall/gjson"
@@ -21,6 +22,7 @@ var (
 	price       = float64(0)
 	depth       = ""
 	sub         = ""
+	api         = models.Fcoin{}
 )
 
 func DepthRun() {
@@ -34,10 +36,30 @@ func DepthRun() {
 	beego.Error("开始监Fcoin")
 	//数据监听
 	go listionRead()
+	go listionOrders()
+
+	//订阅数据
 	depth = fmt.Sprintf("depth.L20.%s%s", beego.AppConfig.String("Symbol"), beego.AppConfig.String("Base"))
 	sub = fmt.Sprintf(`{"cmd":"sub", "args":["%s"], "id":"1"}`, depth)
 	//订阅货币数据
 	models.WsSend(wss, sub)
+}
+
+//监控订单 每分钟检查一次
+func listionOrders() {
+	for {
+		//获取资金
+		//currency, base := api.GetBalance()
+		//beego.Trace("币：", currency, " 钱：", base)
+		//获取订单列表
+		content := api.GetOrders(beego.AppConfig.String("Symbol") + beego.AppConfig.String("Base"))
+		data := gjson.Get(content, "data").Array()
+		for k, v := range data {
+
+		}
+		time.Sleep(60 * time.Second)
+
+	}
 }
 
 func reConn() error {
@@ -106,10 +128,17 @@ func listionRead() {
 
 func setPrice(ms uint64, asks, bids float64) {
 	switch beego.AppConfig.String("Mode") {
-	case "1":
+	case "0":
 		price = (asks + bids) / 2
+	case "1":
+		price = asks
 	case "2":
+		price = bids
 	case "3":
+		price = bids
+	case "4":
+		price = bids
+
 	default:
 		ts := ms / 1000
 		length := len(price_array)

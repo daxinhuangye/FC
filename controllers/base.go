@@ -1,16 +1,13 @@
 package controllers
 
 import (
-	"strings"
 	"tsEngine/tsTime"
 
 	"github.com/astaxie/beego"
-	"github.com/beego/i18n"
 )
 
 type BaseController struct {
 	beego.Controller
-	i18n.Locale
 	Code    int
 	Msg     string
 	Result  interface{}
@@ -21,17 +18,6 @@ var langTypes []string // Languages that are supported.
 
 func init() {
 	beego.Trace("初始化控制器")
-	//获取语言包列表
-	langTypes = strings.Split(beego.AppConfig.String("LangTypes"), "|")
-
-	//载入语言包
-	for _, lang := range langTypes {
-		beego.Trace("载入语言包: " + lang)
-		if err := i18n.SetMessage(lang, "static/i18n/"+"locale_"+lang+".ini"); err != nil {
-			beego.Error("错误载入:", err)
-			return
-		}
-	}
 
 }
 
